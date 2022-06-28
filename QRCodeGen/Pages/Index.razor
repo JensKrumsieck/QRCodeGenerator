@@ -1,0 +1,48 @@
+﻿@page "/"
+@using SkiaSharp.QrCode
+@using SkiaSharp
+@using SkiaSharp.Views.Blazor
+
+<div class="container mx-auto">
+    <EditForm EditContext="@_ctx">
+        <p>
+            <label for="value" class="block text-dark">QR Code Value</label>
+            <LiveInputText @bind-Value="_model.Value" id="value" class="form-input mt-2 block w-full rounded-md border-light-green shadow-sm focus:border-green focus:ring focus:ring-green focus:ring-opacity-50"/>
+        </p>
+    </EditForm>
+    <SKCanvasView width="@_model.Size" height="@_model.Size" OnPaintSurface="OnPaintSurface" @ref="@CanvasView"/>
+
+</div>
+@code{
+    private EditContext? _ctx;
+    private readonly QrCodeData _model = new();
+    private SKCanvasView? CanvasView { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        _ctx = new EditContext(_model);
+        _ctx.OnFieldChanged += (s, e) => CanvasView?.Invalidate();
+        base.OnInitialized();
+    }
+
+    void OnPaintSurface(SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Black);
+        var gen = new QRCodeGenerator();
+        var qr = gen.CreateQrCode(_model.Value, _model.Level);
+        var info = new SKImageInfo(_model.Size, _model.Size);
+        using var surface = SKSurface.Create(info);
+        canvas.Render(qr, info.Width, info.Height, SKColors.Transparent, _model.Foreground, _model.Background);
+    }
+    
+    public class QrCodeData
+    {
+        public string Value { get; set; } = "https://jenskrumsieck.de";
+        public int Size { get; set; } = 512;
+        public ECCLevel Level { get; set; } = ECCLevel.L;
+        public SKColor Background { get; set; } = SKColors.White;
+        public SKColor Foreground { get; set; } = SKColors.Black;
+    }
+
+}
